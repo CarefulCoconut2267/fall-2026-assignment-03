@@ -31,6 +31,29 @@ describe('Part 1: API Integration Tests', () => {
     expect(missingUser.status).toBe(404);
   });
 
+  it('rejects malformed user IDs and user payloads', async () => {
+    const malformedId = await request(app).get('/users/1.5');
+    expect(malformedId.status).toBe(400);
+
+    const nullPayload = await request(app)
+      .post('/users')
+      .set('Content-Type', 'application/json')
+      .send('null');
+    expect(nullPayload.status).toBe(400);
+
+    const invalidPayloads = [
+      [],
+      { name: 'Ada Lovelace' },
+      { name: '', email: 'ada@example.com' },
+      { name: 'Ada Lovelace', email: 'ada@example.com', extra: true },
+    ];
+
+    for (const payload of invalidPayloads) {
+      const response = await request(app).post('/users').send(payload);
+      expect(response.status).toBe(400);
+    }
+  });
+
   it('supports creating, listing, filtering, fetching, and updating tickets', async () => {
     const createdUser = await request(app)
       .post('/users')
@@ -59,7 +82,9 @@ describe('Part 1: API Integration Tests', () => {
       .set('X-User-Id', String(creatorId))
       .send({ title: 'Verify pagination boundaries' });
 
-    const list = await request(app).get('/tickets?limit=2&offset=1&status=TODO');
+    const list = await request(app).get(
+      '/tickets?limit=2&offset=1&status=TODO',
+    );
     expect(list.status).toBe(200);
     expect(list.body).toEqual([secondTicket.body, thirdTicket.body]);
 
@@ -78,7 +103,9 @@ describe('Part 1: API Integration Tests', () => {
     expect(todoTickets.status).toBe(200);
     expect(todoTickets.body).toEqual([secondTicket.body, thirdTicket.body]);
 
-    const inProgressTickets = await request(app).get('/tickets?status=IN_PROGRESS');
+    const inProgressTickets = await request(app).get(
+      '/tickets?status=IN_PROGRESS',
+    );
     expect(inProgressTickets.status).toBe(200);
     expect(inProgressTickets.body).toEqual([updated.body]);
 
