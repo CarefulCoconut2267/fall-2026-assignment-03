@@ -30,4 +30,61 @@ describe('Part 1: API Integration Tests', () => {
     const missingUser = await request(app).get('/users/999999');
     expect(missingUser.status).toBe(404);
   });
+
+  it('supports creating, listing, filtering, fetching, and updating tickets', async () => {
+    const createdUser = await request(app)
+      .post('/users')
+      .send({ name: 'Grace Hopper', email: 'grace@example.com' });
+    const creatorId = createdUser.body.id;
+
+    const createdTicket = await request(app)
+      .post('/tickets')
+      .set('X-User-Id', String(creatorId))
+      .send({ title: 'Add ticket API', description: 'Implement routes' });
+
+    expect(createdTicket.status).toBe(201);
+    expect(createdTicket.body).toMatchObject({
+      title: 'Add ticket API',
+      description: 'Implement routes',
+      status: 'TODO',
+      creator_id: creatorId,
+    });
+
+    const list = await request(app).get('/tickets?limit=1&offset=0&status=TODO');
+    expect(list.status).toBe(200);
+    expect(list.body).toEqual([createdTicket.body]);
+
+    const fetched = await request(app).get(`/tickets/${createdTicket.body.id}`);
+    expect(fetched.status).toBe(200);
+    expect(fetched.body).toEqual(createdTicket.body);
+
+    const updated = await request(app)
+      .patch(`/tickets/${createdTicket.body.id}/status`)
+      .set('X-User-Id', String(creatorId))
+      .send({ status: 'IN_PROGRESS' });
+    expect(updated.status).toBe(200);
+    expect(updated.body.status).toBe('IN_PROGRESS');
+
+    const missingTicket = await request(app).get('/tickets/999999');
+    expect(missingTicket.status).toBe(404);
+  });
+
+  it('rejects unauthenticated and malformed ticket writes and queries', async () => {
+    const unauthorized = await request(app)
+      .post('/tickets')
+      .send({ title: 'No creator' });
+    expect(unauthorized.status).toBe(401);
+
+    const createdUser = await request(app)
+      .post('/users')
+      .send({ name: 'Katherine Johnson', email: 'katherine@example.com' });
+    const invalidPayload = await request(app)
+      .post('/tickets')
+      .set('X-User-Id', String(createdUser.body.id))
+      .send({ title: 'Valid title', extra: true });
+    expect(invalidPayload.status).toBe(400);
+
+    const invalidQuery = await request(app).get('/tickets?limit=2.5');
+    expect(invalidQuery.status).toBe(400);
+  });
 });
