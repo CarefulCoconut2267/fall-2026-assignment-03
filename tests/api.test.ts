@@ -50,9 +50,18 @@ describe('Part 1: API Integration Tests', () => {
       creator_id: creatorId,
     });
 
-    const list = await request(app).get('/tickets?limit=1&offset=0&status=TODO');
+    const secondTicket = await request(app)
+      .post('/tickets')
+      .set('X-User-Id', String(creatorId))
+      .send({ title: 'Add pagination test' });
+    const thirdTicket = await request(app)
+      .post('/tickets')
+      .set('X-User-Id', String(creatorId))
+      .send({ title: 'Verify pagination boundaries' });
+
+    const list = await request(app).get('/tickets?limit=2&offset=1&status=TODO');
     expect(list.status).toBe(200);
-    expect(list.body).toEqual([createdTicket.body]);
+    expect(list.body).toEqual([secondTicket.body, thirdTicket.body]);
 
     const fetched = await request(app).get(`/tickets/${createdTicket.body.id}`);
     expect(fetched.status).toBe(200);
@@ -64,6 +73,14 @@ describe('Part 1: API Integration Tests', () => {
       .send({ status: 'IN_PROGRESS' });
     expect(updated.status).toBe(200);
     expect(updated.body.status).toBe('IN_PROGRESS');
+
+    const todoTickets = await request(app).get('/tickets?status=TODO');
+    expect(todoTickets.status).toBe(200);
+    expect(todoTickets.body).toEqual([secondTicket.body, thirdTicket.body]);
+
+    const inProgressTickets = await request(app).get('/tickets?status=IN_PROGRESS');
+    expect(inProgressTickets.status).toBe(200);
+    expect(inProgressTickets.body).toEqual([updated.body]);
 
     const missingTicket = await request(app).get('/tickets/999999');
     expect(missingTicket.status).toBe(404);
