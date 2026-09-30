@@ -225,6 +225,10 @@ Write tests to verify the math logic. Insert time logs for a single ticket, then
 
 ### Part 2: Database Migrations & Kysely (10 Points Total)
 
+### AI Usage Disclaimer
+
+GitHub Copilot was used as an assistive tool during production, with all code suggestions being reviewed line-by-line and proper testing being implemented. All lines added were human-checked to ensure they aligned with the assignment requirements and specifications. I understand the underlying logic of the code, and take full responsibility for its correctness and implementation.
+
 - **Migration (2 points):** Accurately defines table schema with necessary Foreign Keys and data types. The `down` method correctly drops the table.
 - **DAL (3 points):** Types compile successfully. The `getTotalHoursForTicket` method executes the sum using SQL aggregation, not in-memory JavaScript array methods.
 - **Routes (3 points):** Correctly wires up the new HTTP endpoints, securely utilizing the auth middleware to track who logged the time.
